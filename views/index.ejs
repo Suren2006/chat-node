@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nerus</title>
+    <!-- <link rel="website icon" href="https://nerus/img/newfavicon.png" type="image/x-icon"> -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+    <script src="/socket.io/socket.io.js"></script>
+</head>
+<style>
+
+    body {
+        width: 100%;
+        height: 100vh;
+    }
+
+    ul {
+        list-style-type: none;
+    }
+    .from_me {
+        display: flex;
+        width: 100%;
+    }
+    .from_me>h3 {
+        background-color: rgb(103, 103, 255);
+        margin-left: auto;
+        padding: 10px;
+        border-radius: 10px;
+        color: white;
+        margin-bottom: 0;
+    }
+</style>
+<body class="bg-black">
+    <div class="container-fluid d-flex justify-content-end align-items-start h-100">
+        <div>
+            <button id="back" class="border-0 bg-transparent ">
+                <i class="bi bi-arrow-left fs-3 text-white"></i>
+            </button>
+        </div>
+          <div class="col-10 h-100">
+              <div class="w-100 h-100 p-5 d-flex justify-content-between align-items-center flex-column">
+                  <div class="w-100">
+                          <div class="d-flex justify-content-start align-items-center gap-3 pb-3 border-bottom">
+                            <div class="overflow-hidden d-flex justify-content-center align-items-center rounded-circle" style="width: 50px; aspect-ratio: 1;">
+                                <img src='' class='w-100 h-100 object-fit-cover' id="profile_picture">
+                            </div>
+                            
+                            <h4 class="m-0 text-white" id="nameSurname" >
+                            </h4>
+                          </div>
+                  </div>
+                  <div id="chatBox" class="text-white w-100 m-5 h-100 overflow-y-scroll">
+                      <% messages.forEach(function(message) { %>
+                          <div class="w-100 d-flex">
+                            <div class="ms-auto">
+                                <h3 class="btn message " data-id="<%= message.from_user %>">
+                                    <%= message.message %>
+                                </h3>
+                                <h6 class="fs-6">
+                                    <%= message.send_on.toTimeString().slice(0,5) %>
+                                </h6>
+                            </div>
+                          </div>
+                        <% }); %>
+                  </div>
+                  <form class="w-100 d-flex justify-content-end align-items-center" id="message-form">
+                      <input type="text" id="message" placeholder="Type..." autocomplete="off" class="w-100 form-control text-white  border-info bg-transparent rounded-3" autofocus>
+                      <button type="submit" class="bg-transparent border-0 position-absolute text-white pe-3" type="submit">Send</button>
+                  </form>
+              </div>
+          </div>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.4/jquery.min.js"></script>
+
+    <script>
+        const socket = io();
+        
+        document.getElementById("chatBox").scrollTop = document.getElementById("chatBox").scrollHeight;
+
+        const mainuser = JSON.parse(sessionStorage.getItem('mainuser'))
+        const user = JSON.parse(sessionStorage.getItem('user'))
+
+        const mainuserId = mainuser[0]
+        const mainuserName = mainuser[1]
+        const mainuserSurname = mainuser[2];
+        const mainuserPic = mainuser[6]
+
+        const userId = user[0]
+        const userName = user[1]
+        const userSurname = user[2];
+        const userPic = user[6]
+       
+        // console.log(mainuser, "main")
+
+        // console.log(user, "user")
+
+        for (let i = 0; i<$('.message').length;i++ ) {
+            if ($('.message')[i].dataset.id == userId) {
+                $('.message')[i].setAttribute("class", "btn btn-secondary message")
+            }else {
+                $('.message')[i].setAttribute("class", "btn btn-primary message")
+            }
+        }
+        
+        $("#back").click(()=> {
+            history.back()
+       })
+
+        $("#nameSurname").append(`${userName}   ${userSurname}`)
+        $("#profile_picture").attr('src', `${location.protocol}//${location.hostname}/${userPic}`)
+       
+        document.querySelector('#message-form').addEventListener('submit', (event) => {
+            event.preventDefault();
+            console.log(mainuserId, userId)
+            const to_user = userId;
+            const from_user = mainuserId;
+            const message = document.querySelector('#message').value;
+            const from_chat_id = `${Math.min(mainuserId, userId)}000${Math.max(mainuserId,userId)}`;   
+            socket.emit('message', {message, from_chat_id, to_user, from_user});
+            document.querySelector('#message').value = '';
+        });
+
+        socket.on('message', ({message, from_chat_id, to_user,from_user}) => {
+            const messages = document.querySelector('#chatBox');
+            const hh = document.createElement('h3');
+            hh.setAttribute('class', `btn ${ (from_user == mainuserId) ? 'btn-primary': 'btn-secondary' }`);
+            hh.textContent = message;
+            const dd = document.createElement('h6');
+            dd.textContent = new Date().toTimeString().slice(0,5)
+            const div_flex = document.createElement('div');
+            div_flex.setAttribute("class", "w-100 d-flex")
+            const div_ms = document.createElement('div');
+            div_ms.setAttribute("class", "ms-auto")
+            div_ms.appendChild(hh);
+            div_ms.appendChild(dd);
+            div_flex.appendChild(div_ms)
+            messages.appendChild(div_flex);
+            document.getElementById("chatBox").scrollTop = document.getElementById("chatBox").scrollHeight;
+        });
+    </script>
+</body>
+</html>
